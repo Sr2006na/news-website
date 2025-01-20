@@ -23,7 +23,7 @@
         <!-- News articles will be dynamically inserted here -->
     </main>
     <footer>
-        <p>&copy; 2025 News Website</p>
+        <p>&copy; 2023 News Website</p>
     </footer>
 
     <script>
@@ -39,7 +39,9 @@
         };
 
         // Initialize Firebase
-        const app = firebase.initializeApp(firebaseConfig);
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
         const db = firebase.firestore();
 
         // Fetch news from Firestore
@@ -53,6 +55,7 @@
                     return;
                 }
 
+                newsContainer.innerHTML = ''; // Clear existing content
                 snapshot.forEach(doc => {
                     const article = doc.data();
                     const articleElement = document.createElement('article');
