@@ -5,11 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel</title>
     <link rel="stylesheet" href="styles.css">
-    <!-- Add Firebase SDK -->
+    
     <script src="https://www.gstatic.com/firebasejs/7.20.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/7.20.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/7.20.0/firebase-firestore.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/7.20.0/firebase-storage.js"></script>
 </head>
 <body>
     <div id="loginSection">
@@ -34,14 +33,8 @@
             <label for="content">Content:</label>
             <textarea id="content" name="content" required></textarea>
             <br>
-            <label for="image">Image:</label>
-            <input type="file" id="image" name="image" accept="image/*" required>
-            <br>
-            <!-- Progress Bar -->
-            <div id="progressBarContainer" style="display: none;">
-                <progress id="progressBar" value="0" max="100"></progress>
-                <span id="progressText">0%</span>
-            </div>
+            <label for="imageUrl">Image URL:</label>
+            <input type="url" id="imageUrl" name="imageUrl" placeholder="Paste image URL from Postimages.org" required>
             <br>
             <button type="submit">Add News</button>
         </form>
@@ -49,7 +42,7 @@
     </div>
 
     <script>
-        // Firebase configuration
+        
         const firebaseConfig = {
             apiKey: "AIzaSyBzwTHxw6Y9opozv3AsjCvDQwLYoVB56YE",
             authDomain: "news-website-369.firebaseapp.com",
@@ -60,15 +53,14 @@
             measurementId: "G-MR1QM00EHP"
         };
 
-        // Initialize Firebase
+      
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
         }
         const auth = firebase.auth();
         const db = firebase.firestore();
-        const storage = firebase.storage(); // Initialize Firebase Storage
 
-        // Login
+      
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('email').value;
@@ -92,7 +84,7 @@
             document.getElementById('adminSection').style.display = 'none';
         });
 
-        // Check authentication state
+        
         auth.onAuthStateChanged(user => {
             if (user) {
                 document.getElementById('loginSection').style.display = 'none';
@@ -103,61 +95,30 @@
             }
         });
 
-        // Add news to Firestore
+        
         document.getElementById('newsForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const title = document.getElementById('title').value;
             const content = document.getElementById('content').value;
-            const imageFile = document.getElementById('image').files[0];
+            const imageUrl = document.getElementById('imageUrl').value;
 
-            if (!imageFile) {
-                alert('Please select an image file.');
-                return; // Stop execution if no image is selected
+            if (!imageUrl) {
+                alert('Please provide an image URL.');
+                return; 
             }
 
             try {
-                // Show progress bar
-                document.getElementById('progressBarContainer').style.display = 'block';
-                document.getElementById('progressBar').value = 0;
-                document.getElementById('progressText').innerText = '0%';
-
-                // Upload image to Firebase Storage
-                const storageRef = storage.ref();
-                const imageRef = storageRef.child(`news-images/${imageFile.name}`);
-                const uploadTask = imageRef.put(imageFile);
-
-                // Track upload progress
-                uploadTask.on('state_changed', 
-                    (snapshot) => {
-                        // Update progress bar
-                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                        document.getElementById('progressBar').value = progress;
-                        document.getElementById('progressText').innerText = `${Math.round(progress)}%`;
-                    },
-                    (error) => {
-                        // Handle upload error
-                        alert('Upload failed: ' + error.message);
-                        document.getElementById('progressBarContainer').style.display = 'none';
-                    },
-                    async () => {
-                        // Upload complete
-                        const imageUrl = await uploadTask.snapshot.ref.getDownloadURL();
-
-                        // Add news to Firestore
-                        await db.collection('news').add({
-                            title,
-                            content,
-                            imageUrl,
-                            date: new Date()
-                        });
-                        alert('News added successfully!');
-                        document.getElementById('newsForm').reset();
-                        document.getElementById('progressBarContainer').style.display = 'none';
-                    }
-                );
+                
+                await db.collection('news').add({
+                    title,
+                    content,
+                    imageUrl,
+                    date: new Date()
+                });
+                alert('News added successfully!');
+                document.getElementById('newsForm').reset();
             } catch (error) {
                 alert('Failed to add news: ' + error.message);
-                document.getElementById('progressBarContainer').style.display = 'none';
             }
         });
     </script>
