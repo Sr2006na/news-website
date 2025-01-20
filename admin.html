@@ -9,6 +9,7 @@
     <script src="https://www.gstatic.com/firebasejs/7.20.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/7.20.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/7.20.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.20.0/firebase-storage.js"></script>
 </head>
 <body>
     <div id="loginSection">
@@ -18,7 +19,7 @@
             <input type="email" id="email" name="email" value="sreenugirikp123@gmail.com" required>
             <br>
             <label for="password">Password:</label>
-            <input type="password" id="password" name="password"required>
+            <input type="password" id="password" name="password" required>
             <br>
             <button type="submit">Login</button>
         </form>
@@ -29,7 +30,8 @@
         <form id="newsForm">
             <label for="title">Title:</label>
             <input type="text" id="title" name="title" required>
-            <br>    <label for="content">Content:</label>
+            <br>
+            <label for="content">Content:</label>
             <textarea id="content" name="content" required></textarea>
             <br>
             <label for="image">Image:</label>
@@ -39,7 +41,6 @@
         </form>
         <button id="logoutButton">Logout</button>
     </div>
-           
 
     <script>
         
@@ -47,19 +48,19 @@
             apiKey: "AIzaSyBzwTHxw6Y9opozv3AsjCvDQwLYoVB56YE",
             authDomain: "news-website-369.firebaseapp.com",
             projectId: "news-website-369",
-            storageBucket: "news-website-369.firebasestorage.app",
+            storageBucket: "news-website-369.appspot.com",
             messagingSenderId: "653045591370",
             appId: "1:653045591370:web:7c3bff0cc9df76a563a5b3",
             measurementId: "G-MR1QM00EHP"
         };
 
-        
+      
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
         }
         const auth = firebase.auth();
         const db = firebase.firestore();
-        const storage = firebase.storage();
+        const storage = firebase.storage(); // 
 
         
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
@@ -67,21 +68,17 @@
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
 
-            console.log('Attempting to log in with:', email, password); 
-
             try {
-                const userCredential = await auth.signInWithEmailAndPassword(email, password);
-                console.log('Login successful!', userCredential.user); 
+                await auth.signInWithEmailAndPassword(email, password);
                 alert('Login successful!');
                 document.getElementById('loginSection').style.display = 'none';
                 document.getElementById('adminSection').style.display = 'block';
             } catch (error) {
-                console.error('Login failed:', error.message); 
                 alert('Login failed: ' + error.message);
             }
         });
 
-        
+      
         document.getElementById('logoutButton').addEventListener('click', () => {
             auth.signOut();
             alert('Logged out successfully!');
@@ -89,14 +86,12 @@
             document.getElementById('adminSection').style.display = 'none';
         });
 
-        
+      
         auth.onAuthStateChanged(user => {
             if (user) {
-                console.log('User is logged in:', user.email); 
                 document.getElementById('loginSection').style.display = 'none';
                 document.getElementById('adminSection').style.display = 'block';
             } else {
-                console.log('User is logged out'); 
                 document.getElementById('loginSection').style.display = 'block';
                 document.getElementById('adminSection').style.display = 'none';
             }
