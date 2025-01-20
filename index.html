@@ -11,23 +11,22 @@
 </head>
 <body>
     <header>
-        <h1>Welcome to My News Website</h1>
+        <h1>Newstime Website</h1>
         <nav>
             <ul>
                 <li><a href="index.html">Home</a></li>
-                <li><a href="admin.html">Admin</a></li>
             </ul>
         </nav>
     </header>
     <main id="newsContainer">
-        <!-- News articles will be dynamically inserted here -->
+      
     </main>
     <footer>
-        <p>&copy; 2023 News Website</p>
+        <p>&copy; 2025 News Website</p>
     </footer>
 
     <script>
-        // Firebase configuration
+        
         const firebaseConfig = {
             apiKey: "AIzaSyBzwTHxw6Y9opozv3AsjCvDQwLYoVB56YE",
             authDomain: "news-website-369.firebaseapp.com",
@@ -38,13 +37,13 @@
             measurementId: "G-MR1QM00EHP"
         };
 
-        // Initialize Firebase
+        
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
         }
         const db = firebase.firestore();
 
-        // Fetch news from Firestore
+        
         async function fetchNews() {
             const newsContainer = document.getElementById('newsContainer');
             try {
@@ -55,14 +54,16 @@
                     return;
                 }
 
-                newsContainer.innerHTML = ''; // Clear existing content
+                newsContainer.innerHTML = ''; 
+                
                 snapshot.forEach(doc => {
                     const article = doc.data();
                     const articleElement = document.createElement('article');
                     articleElement.innerHTML = `
+                        <img src="${article.imageUrl}" alt="${article.title}">
                         <h2>${article.title}</h2>
-                        <p>${article.content}</p>
-                        <small>${new Date(article.date.toDate()).toLocaleDateString()}</small>
+                        <p>${article.content.substring(0, 100)}...</p>
+                        <a href="#" onclick="showFullNews('${doc.id}')">Read more</a>
                     `;
                     newsContainer.appendChild(articleElement);
                 });
@@ -72,7 +73,22 @@
             }
         }
 
-        // Fetch news when the page loads
+        function showFullNews(docId) {
+            db.collection('news').doc(docId).get().then(doc => {
+                const article = doc.data();
+                const newsContainer = document.getElementById('newsContainer');
+                newsContainer.innerHTML = `
+                    <div class="full-news">
+                        <img src="${article.imageUrl}" alt="${article.title}">
+                        <h2>${article.title}</h2>
+                        <p>${article.content}</p>
+                        <a href="index.html">Back to Home</a>
+                    </div>
+                `;
+            });
+        }
+
+      
         fetchNews();
     </script>
 </body>
