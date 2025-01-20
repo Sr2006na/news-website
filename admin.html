@@ -33,8 +33,11 @@
             <label for="content">Content:</label>
             <textarea id="content" name="content" required></textarea>
             <br>
+              <label for="category">Category:</label>
+    <input type="text" id="category" name="category" required>
+    <br>
             <label for="imageUrl">Image URL:</label>
-            <input type="url" id="imageUrl" name="imageUrl" placeholder="Paste image URL from Postimages.org" required>
+            <input type="url" id="imageUrl" name="imageUrl" placeholder="Paste image URL" required>
             <br>
             <button type="submit">Add News</button>
         </form>
@@ -100,6 +103,7 @@
             e.preventDefault();
             const title = document.getElementById('title').value;
             const content = document.getElementById('content').value;
+            const category = document.getElementById('category').value;
             const imageUrl = document.getElementById('imageUrl').value;
 
             if (!imageUrl) {
@@ -112,6 +116,7 @@
                 await db.collection('news').add({
                     title,
                     content,
+                    category,
                     imageUrl,
                     date: new Date()
                 });
