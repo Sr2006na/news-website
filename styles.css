@@ -155,3 +155,27 @@ form button:hover {
 #logoutButton:hover {
     background-color: #ff1a1a;
 }
+
+.news-card p strong {
+    color: #333;
+    font-weight: bold;
+}
+
+.news-card p {
+    color: #555;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin: 8px 0;
+}
+
+.full-news p strong {
+    color: #333;
+    font-weight: bold;
+}
+
+.full-news p {
+    color: #555;
+    font-size: 1rem;
+    line-height: 1.6;
+    margin: 8px 0;
+}
