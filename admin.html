@@ -99,31 +99,36 @@
 
         
         document.getElementById('newsForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const title = document.getElementById('title').value;
-            const content = document.getElementById('content').value;
-            const imageFile = document.getElementById('image').files[0];
+    e.preventDefault();
+    const title = document.getElementById('title').value;
+    const content = document.getElementById('content').value;
+    const imageFile = document.getElementById('image').files[0];
 
-            try {
-                
-                const storageRef = storage.ref();
-                const imageRef = storageRef.child(`news-images/${imageFile.name}`);
-                await imageRef.put(imageFile);
-                const imageUrl = await imageRef.getDownloadURL();
+    if (!imageFile) {
+        alert('Please select an image file.');
+        return; // Stop execution if no image is selected
+    }
 
-                
-                await db.collection('news').add({
-                    title,
-                    content,
-                    imageUrl,
-                    date: new Date()
-                });
-                alert('News added successfully!');
-                document.getElementById('newsForm').reset();
-            } catch (error) {
-                alert('Failed to add news: ' + error.message);
-            }
+    try {
+        // Upload image to Firebase Storage
+        const storageRef = storage.ref();
+        const imageRef = storageRef.child(`news-images/${imageFile.name}`);
+        await imageRef.put(imageFile);
+        const imageUrl = await imageRef.getDownloadURL();
+
+        // Add news to Firestore
+        await db.collection('news').add({
+            title,
+            content,
+            imageUrl,
+            date: new Date()
         });
+        alert('News added successfully!');
+        document.getElementById('newsForm').reset();
+    } catch (error) {
+        alert('Failed to add news: ' + error.message);
+    }
+});
     </script>
 </body>
 </html>
