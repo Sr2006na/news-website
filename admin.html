@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Add Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js"></script>
+</head>
+<body>
+    <div id="loginSection">
+        <h1>Admin Login</h1>
+        <form id="loginForm">
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" value="sreenugirikp123@gmail.com" required>
+            <br>
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required>
+            <br>
+            <button type="submit">Login</button>
+        </form>
+    </div>
+
+    <div id="adminSection" style="display: none;">
+        <h1>Admin Panel</h1>
+        <form id="newsForm">
+            <label for="title">Title:</label>
+            <input type="text" id="title" name="title" required>
+            <br>
+            <label for="content">Content:</label>
+            <textarea id="content" name="content" required></textarea>
+            <br>
+            <button type="submit">Add News</button>
+        </form>
+        <button id="logoutButton">Logout</button>
+    </div>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBzwTHxw6Y9opozv3AsjCvDQwLYoVB56YE",
+            authDomain: "news-website-369.firebaseapp.com",
+            projectId: "news-website-369",
+            storageBucket: "news-website-369.firebasestorage.app",
+            messagingSenderId: "653045591370",
+            appId: "1:653045591370:web:7c3bff0cc9df76a563a5b3",
+            measurementId: "G-MR1QM00EHP"
+        };
+
+        // Initialize Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // Login
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            console.log('Attempting to log in with:', email, password); // Debugging
+
+            try {
+                const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                console.log('Login successful!', userCredential.user); // Debugging
+                alert('Login successful!');
+                document.getElementById('loginSection').style.display = 'none';
+                document.getElementById('adminSection').style.display = 'block';
+            } catch (error) {
+                console.error('Login failed:', error.message); // Debugging
+                alert('Login failed: ' + error.message);
+            }
+        });
+
+        // Logout
+        document.getElementById('logoutButton').addEventListener('click', () => {
+            auth.signOut();
+            alert('Logged out successfully!');
+            document.getElementById('loginSection').style.display = 'block';
+            document.getElementById('adminSection').style.display = 'none';
+        });
+
+        // Check authentication state
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                console.log('User is logged in:', user.email); // Debugging
+                document.getElementById('loginSection').style.display = 'none';
+                document.getElementById('adminSection').style.display = 'block';
+            } else {
+                console.log('User is logged out'); // Debugging
+                document.getElementById('loginSection').style.display = 'block';
+                document.getElementById('adminSection').style.display = 'none';
+            }
+        });
+
+        // Add news to Firestore
+        document.getElementById('newsForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const title = document.getElementById('title').value;
+            const content = document.getElementById('content').value;
+
+            try {
+                await db.collection('news').add({
+                    title,
+                    content,
+                    date: new Date()
+                });
+                alert('News added successfully!');
+                document.getElementById('newsForm').reset();
+            } catch (error) {
+                alert('Failed to add news: ' + error.message);
+            }
+        });
+    </script>
+</body>
+</html>
