@@ -11,7 +11,7 @@
 </head>
 <body>
     <header>
-        <h1>Newstime</h1>
+        <h1>Newstime Website</h1>
         <nav>
             <ul>
                 <li><a href="index.html">Home</a></li>
@@ -44,52 +44,70 @@
         const db = firebase.firestore();
 
         
-        async function fetchNews() {
-            const newsContainer = document.getElementById('newsContainer');
-            try {
-                const snapshot = await db.collection('news').orderBy('date', 'desc').get();
+        <script>
+    async function fetchNews() {
+        const newsContainer = document.getElementById('newsContainer');
+        try {
+            const snapshot = await db.collection('news').orderBy('date', 'desc').get();
 
-                if (snapshot.empty) {
-                    newsContainer.innerHTML = '<p>No news articles found.</p>';
-                    return;
-                }
-
-                newsContainer.innerHTML = ''; 
-                
-                snapshot.forEach(doc => {
-                    const article = doc.data();
-                    const articleElement = document.createElement('article');
-                    articleElement.classList.add('news-card'); // Add the card class
-                    articleElement.innerHTML = `
-                        <img src="${article.imageUrl}" alt="${article.title}">
-                        <h2>${article.title}</h2>
-                        <p>${article.content.substring(0, 100)}...</p>
-                        <a href="#" onclick="showFullNews('${doc.id}')">Read more</a>
-                    `;
-                    newsContainer.appendChild(articleElement);
-                });
-            } catch (error) {
-                console.error('Error fetching news:', error);
-                newsContainer.innerHTML = '<p>Failed to load news. Please try again later.</p>';
+            if (snapshot.empty) {
+                newsContainer.innerHTML = '<p>No news articles found.</p>';
+                return;
             }
-        }
 
-        function showFullNews(docId) {
-            db.collection('news').doc(docId).get().then(doc => {
+            newsContainer.innerHTML = ''; 
+
+            snapshot.forEach(doc => {
                 const article = doc.data();
-                const newsContainer = document.getElementById('newsContainer');
-                newsContainer.innerHTML = `
-                    <div class="full-news">
-                        <img src="${article.imageUrl}" alt="${article.title}">
-                        <h2>${article.title}</h2>
-                        <p>${article.content}</p>
-                        <a href="index.html">Back to Home</a>
-                    </div>
-                `;
-            });
-        }
+                const articleElement = document.createElement('article');
+                articleElement.classList.add('news-card');
 
-        fetchNews();
-    </script>
+                // Format the date and time
+                const date = article.date.toDate(); // Convert Firestore timestamp to JavaScript Date object
+                const formattedDate = date.toLocaleDateString(); // Format date
+                const formattedTime = date.toLocaleTimeString(); // Format time
+
+                articleElement.innerHTML = `
+                    <img src="${article.imageUrl}" alt="${article.title}">
+                    <h2>${article.title}</h2>
+                    <p><strong>Category:</strong> ${article.category}</p>
+                    <p><strong>Date:</strong> ${formattedDate} | <strong>Time:</strong> ${formattedTime}</p>
+                    <p>${article.content.substring(0, 100)}...</p>
+                    <a href="#" onclick="showFullNews('${doc.id}')">Read more</a>
+                `;
+                newsContainer.appendChild(articleElement);
+            });
+        } catch (error) {
+            console.error('Error fetching news:', error);
+            newsContainer.innerHTML = '<p>Failed to load news. Please try again later.</p>';
+        }
+    }
+
+    function showFullNews(docId) {
+        db.collection('news').doc(docId).get().then(doc => {
+            const article = doc.data();
+            const newsContainer = document.getElementById('newsContainer');
+
+            // Format the date and time for the full news view
+            const date = article.date.toDate();
+            const formattedDate = date.toLocaleDateString();
+            const formattedTime = date.toLocaleTimeString();
+
+            newsContainer.innerHTML = `
+                <div class="full-news">
+                    <img src="${article.imageUrl}" alt="${article.title}">
+                    <h2>${article.title}</h2>
+                    <p><strong>Category:</strong> ${article.category}</p>
+                    <p><strong>Date:</strong> ${formattedDate} | <strong>Time:</strong> ${formattedTime}</p>
+                    <p>${article.content}</p>
+                    <a href="index.html">Back to Home</a>
+                </div>
+            `;
+        });
+    }
+
+    fetchNews();
+    
+</script>
 </body>
 </html>
