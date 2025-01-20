@@ -59,6 +59,7 @@
                 snapshot.forEach(doc => {
                     const article = doc.data();
                     const articleElement = document.createElement('article');
+                    articleElement.classList.add('news-card'); // Add the card class
                     articleElement.innerHTML = `
                         <img src="${article.imageUrl}" alt="${article.title}">
                         <h2>${article.title}</h2>
@@ -88,7 +89,6 @@
             });
         }
 
-      
         fetchNews();
     </script>
 </body>
