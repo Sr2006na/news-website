@@ -1,27 +1,64 @@
-body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-    background-color: #f4f4f4;
+
+.news-card {
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 16px;
+    margin: 16px 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-header {
-    background-color: #333;
-    color: #fff;
-    padding: 10px 0;
-    text-align: center;
+.news-card img {
+    width: 100%;
+    border-radius: 8px;
 }
 
-nav ul {
-    list-style: none;
-    padding: 0;
+.news-card h2 {
+    margin: 16px 0 8px;
 }
 
-nav ul li {
-    display: inline;
-    margin: 0 10px;
+.news-card p {
+    color: #555;
 }
 
-nav ul li a {
-    color: #fff;
+.news-card a {
+    display: inline-block;
+    margin-top: 8px;
+    color: #007BFF;
     text-decoration: none;
+}
+
+.news-card a:hover {
+    text-decoration: underline;
+}
+
+
+.full-news {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 16px;
+}
+
+.full-news img {
+    width: 100%;
+    border-radius: 8px;
+}
+
+.full-news h2 {
+    margin: 16px 0 8px;
+}
+
+.full-news p {
+    color: #333;
+    line-height: 1.6;
+}
+
+.full-news a {
+    display: inline-block;
+    margin-top: 16px;
+    color: #007BFF;
+    text-decoration: none;
+}
+
+.full-news a:hover {
+    text-decoration: underline;
+}
