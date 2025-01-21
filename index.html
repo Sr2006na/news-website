@@ -144,7 +144,6 @@
         newsContainer.innerHTML = '<p>Failed to load news. Please try again later.</p>';
     }
 }
-
         // Show full news article
         function showFullNews(docId) {
             db.collection('news').doc(docId).get().then(doc => {
