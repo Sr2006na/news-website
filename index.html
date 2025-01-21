@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>News Website</title>
     <link rel="stylesheet" href="styles.css">
-    <!-- Add Firebase SDK -->
+    
     <script src="https://www.gstatic.com/firebasejs/7.20.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/7.20.0/firebase-firestore.js"></script>
 </head>
@@ -26,22 +26,13 @@
     </div>
     </header>
 
-<div id="categoryFilters">
-    <button onclick="fetchNews()">All</button></button>
-        <button onclick="fetchNewsByCategory('India')">India</button>
-    <button onclick="fetchNewsByCategory('Imternational')">International</button>
-    <button onclick="fetchNewsByCategory('Miscellaneous')">Miscellaneous</button>
-    <button onclick="fetchNewsByCategory('Sports')">Sports</button>
-    <button onclick="fetchNewsByCategory('Politics')">Politics</button>
-    <button onclick="fetchNewsByCategory('Technology')">Technology</button>
-    <button onclick="fetchNewsByCategory('Entertainment')">Entertainment</button>
-  
-        <button onclick="fetchNewsByCategory('Health')">Health</button>
-        <button onclick="fetchNewsByCategory('Science')">Science</button>
-</div>
+    
+    <div id="categoryFilters">
+        
+    </div>
 
     <main id="newsContainer">
-        <!-- News articles will be dynamically inserted here -->
+      
     </main>
 
     <footer>
@@ -64,93 +55,112 @@
         }
         const db = firebase.firestore();
 
-        // Fetch all news articles
+        
+        function renderNewsArticles(snapshot, newsContainer) {
+            newsContainer.innerHTML = ''; 
+            snapshot.forEach(doc => {
+                const article = doc.data();
+                const articleElement = document.createElement('article');
+                articleElement.classList.add('news-card');
+
+                
+                const date = article.date.toDate();
+                const formattedDate = date.toLocaleDateString();
+                const formattedTime = date.toLocaleTimeString();
+
+                articleElement.innerHTML = `
+                    <img src="${article.imageUrl}" alt="${article.title}">
+                    <h2>${article.title}</h2>
+                    <p><strong>Category:</strong> <a href="#" onclick="fetchNewsByCategory('${article.category}')">${article.category}</a></p>
+                    <p><strong>Date:</strong> ${formattedDate} | <strong>Time:</strong> ${formattedTime}</p>
+                    <p>${article.content.substring(0, 100)}...</p>
+                    <a href="#" onclick="showFullNews('${doc.id}')">Read more</a>
+                `;
+                newsContainer.appendChild(articleElement);
+            });
+        }
+
+        
         async function fetchNews() {
             const newsContainer = document.getElementById('newsContainer');
+            newsContainer.innerHTML = '<p>Loading news...</p>'; 
             try {
                 const snapshot = await db.collection('news').orderBy('date', 'desc').get();
-
                 if (snapshot.empty) {
                     newsContainer.innerHTML = '<p>No news articles found.</p>';
                     return;
                 }
-
-                newsContainer.innerHTML = ''; // Clear existing content
-
-                snapshot.forEach(doc => {
-                    const article = doc.data();
-                    const articleElement = document.createElement('article');
-                    articleElement.classList.add('news-card');
-
-                    // Format the date and time
-                    const date = article.date.toDate();
-                    const formattedDate = date.toLocaleDateString();
-                    const formattedTime = date.toLocaleTimeString();
-
-                    articleElement.innerHTML = `
-                        <img src="${article.imageUrl}" alt="${article.title}">
-                        <h2>${article.title}</h2>
-                        <p><strong>Category:</strong> ${article.category}</p>
-                        <p><strong>Date:</strong> ${formattedDate} | <strong>Time:</strong> ${formattedTime}</p>
-                        <p>${article.content.substring(0, 100)}...</p>
-                        <a href="#" onclick="showFullNews('${doc.id}')">Read more</a>
-                    `;
-                    newsContainer.appendChild(articleElement);
-                });
+                renderNewsArticles(snapshot, newsContainer);
             } catch (error) {
                 console.error('Error fetching news:', error);
                 newsContainer.innerHTML = '<p>Failed to load news. Please try again later.</p>';
             }
         }
 
-      async function fetchNewsByCategory(category) {
-    const newsContainer = document.getElementById('newsContainer');
-    try {
-        // Fetch news articles where the category matches the selected category
-        const snapshot = await db.collection('news')
-            .where('category', '==', category) // Filter by category
-            .orderBy('date', 'desc') // Order by date (newest first)
-            .get();
+        
+        async function fetchNewsByCategory(category) {
+            const newsContainer = document.getElementById('newsContainer');
+            newsContainer.innerHTML = '<p>Loading news...</p>'; 
+            try {
+                const snapshot = await db.collection('news')
+                    .where('category', '==', category.toLowerCase()) 
+                    .orderBy('date', 'desc')
+                    .get();
 
-        if (snapshot.empty) {
-            newsContainer.innerHTML = `<p>No news articles found in the ${category} category.</p>`;
-            return;
+                if (snapshot.empty) {
+                    newsContainer.innerHTML = `<p>No news articles found in the ${category} category.</p>`;
+                    return;
+                }
+
+                renderNewsArticles(snapshot, newsContainer);
+            } catch (error) {
+                console.error('Error fetching news by category:', error);
+                newsContainer.innerHTML = '<p>Failed to load news. Please try again later.</p>';
+            }
         }
 
-        newsContainer.innerHTML = ''; // Clear existing content
+    
+        async function fetchCategories() {
+            const categoryFilters = document.getElementById('categoryFilters');
+            try {
+                const snapshot = await db.collection('news').get();
+                const categories = new Set();
 
-        snapshot.forEach(doc => {
-            const article = doc.data();
-            const articleElement = document.createElement('article');
-            articleElement.classList.add('news-card');
+                snapshot.forEach(doc => {
+                    const category = doc.data().category;
+                    if (category) {
+                        categories.add(category);
+                    }
+                });
 
-            // Format the date and time
-            const date = article.date.toDate();
-            const formattedDate = date.toLocaleDateString();
-            const formattedTime = date.toLocaleTimeString();
+                
+                categoryFilters.innerHTML = '';
 
-            articleElement.innerHTML = `
-                <img src="${article.imageUrl}" alt="${article.title}">
-                <h2>${article.title}</h2>
-                <p><strong>Category:</strong> ${article.category}</p>
-                <p><strong>Date:</strong> ${formattedDate} | <strong>Time:</strong> ${formattedTime}</p>
-                <p>${article.content.substring(0, 100)}...</p>
-                <a href="#" onclick="showFullNews('${doc.id}')">Read more</a>
-            `;
-            newsContainer.appendChild(articleElement);
-        });
-    } catch (error) {
-        console.error('Error fetching news by category:', error); // Log the full error object
-        newsContainer.innerHTML = '<p>Failed to load news. Please try again later.</p>';
-    }
-}
-        // Show full news article
+                
+                const allButton = document.createElement('button');
+                allButton.textContent = 'All';
+                allButton.onclick = fetchNews;
+                categoryFilters.appendChild(allButton);
+
+                
+                categories.forEach(category => {
+                    const button = document.createElement('button');
+                    button.textContent = category;
+                    button.onclick = () => fetchNewsByCategory(category);
+                    categoryFilters.appendChild(button);
+                });
+            } catch (error) {
+                console.error('Error fetching categories:', error);
+            }
+        }
+
+      
         function showFullNews(docId) {
             db.collection('news').doc(docId).get().then(doc => {
                 const article = doc.data();
                 const newsContainer = document.getElementById('newsContainer');
 
-                // Format the date and time
+              
                 const date = article.date.toDate();
                 const formattedDate = date.toLocaleDateString();
                 const formattedTime = date.toLocaleTimeString();
@@ -168,8 +178,9 @@
             });
         }
 
-        // Fetch all news articles when the page loads
+      
         fetchNews();
+        fetchCategories();
     </script>
 </body>
 </html>
