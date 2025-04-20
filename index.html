@@ -1,186 +1,330 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>News Website</title>
-    <link rel="stylesheet" href="styles.css">
-    
-    <script src="https://www.gstatic.com/firebasejs/7.20.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/7.20.0/firebase-firestore.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>News Website</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"/>
+  <link rel="stylesheet" href="styles.css"/>
+  <script src="https://www.gstatic.com/firebasejs/7.20.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/7.20.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/7.20.0/firebase-firestore.js"></script>
 </head>
 <body>
-    <header>
-      <div class="header-content">
-        <div class="logo-container">
-            <div class="logo">
-                <img src="logo.png" alt="Newstime Logo">
-                <h1>Newstime</h1>
-            </div>
-            <nav>
-                <ul>
-                    <li><a href="index.html"></a></li>
-                </ul>
-            </nav>
+  <header>
+    <div class="header-content">
+      <div class="logo-container">
+        <div class="logo">
+          <img src="logo.png" alt="Newstime Logo" class="logo-img"/>
+          <h1 class="logo-text">Newstime</h1>
         </div>
+      </div>
     </div>
-    </header>
-
-    
-    <div id="categoryFilters">
-        
+    <div id="breakingNewsTicker" class="breaking-news-ticker">
+      <marquee behavior="scroll" direction="left" scrollamount="6" onmouseover="this.stop()" onmouseout="this.start()">
+        <span id="tickerContent"></span>
+      </marquee>
     </div>
+  </header>
 
-    <main id="newsContainer">
-      
-    </main>
+  <div id="categoryFilters" class="category-filters"></div>
 
-    <footer>
-        <p>&copy; 2025 News Website</p>
-    </footer>
+  <main>
+    <div id="newsContainer" class="news-container"></div>
+    <div id="pagination" class="pagination"></div>
+  </main>
 
-    <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyBzwTHxw6Y9opozv3AsjCvDQwLYoVB56YE",
-            authDomain: "news-website-369.firebaseapp.com",
-            projectId: "news-website-369",
-            storageBucket: "news-website-369.appspot.com",
-            messagingSenderId: "653045591370",
-            appId: "1:653045591370:web:7c3bff0cc9df76a563a5b3",
-            measurementId: "G-MR1QM00EHP"
-        };
+  <footer class="footer">
+    <div class="footer-content">
+      <p class="footer-text">© 2025 News Website</p>
+      <div class="footer-links">
+        <a href="privacy-policy.html">Privacy Policy</a> |
+        <a href="terms-of-use.html">Terms of Use</a>
+      </div>
+    </div>
+  </footer>
 
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBzwTHxw6Y9opozv3AsjCvDQwLYoVB56YE",
+      authDomain: "news-website-369.firebaseapp.com",
+      projectId: "news-website-369",
+      storageBucket: "news-website-369.appspot.com",
+      messagingSenderId: "653045591370",
+      appId: "1:653045591370:web:7c3bff0cc9df76a563a5b3",
+      measurementId: "G-MR1QM00EHP"
+    };
+
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+
+    auth.signInAnonymously().catch(function(error) {
+      console.error("Error signing in anonymously:", error);
+    });
+
+    let debounceTimer = null;
+    const ITEMS_PER_PAGE = 6;
+
+    function renderNewsArticles(snapshot, newsContainer, startIndex, endIndex) {
+      newsContainer.innerHTML = '';
+      const articles = snapshot.docs.slice(startIndex, endIndex);
+      if (articles.length === 0) {
+        newsContainer.innerHTML = '<p class="no-news">No news articles found.</p>';
+        return;
+      }
+      articles.forEach(doc => {
+        const article = doc.data();
+        const articleElement = document.createElement('article');
+        articleElement.classList.add('news-card');
+
+        const date = article.date.toDate();
+        const formattedDate = date.toLocaleDateString();
+        const formattedTime = date.toLocaleTimeString();
+        const shareUrl = encodeURIComponent(window.location.href + '?article=' + doc.id);
+
+        articleElement.innerHTML = `
+          <img src="${article.imageUrl}" alt="${article.title}" class="news-img">
+          <h2 class="news-title">${article.title}</h2>
+          <p class="news-meta"><strong>Category:</strong> <a href="#" onclick="fetchNewsByCategory('${article.category}')">${article.category}</a></p>
+          <p class="news-meta"><strong>Date:</strong> ${formattedDate} | <strong>Time:</strong> ${formattedTime}</p>
+          <p class="news-summary">${article.content.substring(0, 100)}...</p>
+          <div class="social-share">
+            <a href="https://www.facebook.com/sharer/sharer.php?u=${shareUrl}" target="_blank" class="share-btn"><i class="fab fa-facebook-f"></i></a>
+            <a href="https://twitter.com/intent/tweet?url=${shareUrl}&text=${encodeURIComponent(article.title)}" target="_blank" class="share-btn"><i class="fab fa-twitter"></i></a>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=${shareUrl}&title=${encodeURIComponent(article.title)}" target="_blank" class="share-btn"><i class="fab fa-linkedin-in"></i></a>
+            <a href="https://wa.me/?text=${encodeURIComponent(article.title + ' - ' + window.location.href)}" target="_blank" class="share-btn"><i class="fab fa-whatsapp"></i></a>
+          </div>
+          <a href="#" onclick="showFullNews('${doc.id}')" class="read-more">Read more</a>
+        `;
+        newsContainer.appendChild(articleElement);
+      });
+    }
+
+    function renderRelatedArticles(snapshot, newsContainer, currentCategory) {
+      if (snapshot.empty) return;
+      const relatedSection = document.createElement('div');
+      relatedSection.classList.add('related-articles');
+      relatedSection.innerHTML = '<h3 class="related-title">Related Articles</h3>';
+      const relatedList = document.createElement('div');
+      relatedList.classList.add('related-list');
+
+      snapshot.forEach(doc => {
+        if (doc.id !== newsContainer.dataset.articleId) {
+          const article = doc.data();
+          const date = article.date.toDate();
+          const formattedDate = date.toLocaleDateString();
+          const relatedItem = document.createElement('div');
+          relatedItem.classList.add('related-item');
+          relatedItem.innerHTML = `
+            <h4 class="related-item-title">${article.title}</h4>
+            <p class="related-item-meta">${formattedDate}</p>
+            <a href="#" onclick="showFullNews('${doc.id}')" class="related-link">Read more</a>
+          `;
+          relatedList.appendChild(relatedItem);
         }
-        const db = firebase.firestore();
+      });
 
-        
-        function renderNewsArticles(snapshot, newsContainer) {
-            newsContainer.innerHTML = ''; 
-            snapshot.forEach(doc => {
-                const article = doc.data();
-                const articleElement = document.createElement('article');
-                articleElement.classList.add('news-card');
+      relatedSection.appendChild(relatedList);
+      newsContainer.appendChild(relatedSection);
+    }
 
-                
-                const date = article.date.toDate();
-                const formattedDate = date.toLocaleDateString();
-                const formattedTime = date.toLocaleTimeString();
+    async function showFullNews(docId) {
+      const newsContainer = document.getElementById('newsContainer');
+      newsContainer.dataset.articleId = docId;
 
-                articleElement.innerHTML = `
-                    <img src="${article.imageUrl}" alt="${article.title}">
-                    <h2>${article.title}</h2>
-                    <p><strong>Category:</strong> <a href="#" onclick="fetchNewsByCategory('${article.category}')">${article.category}</a></p>
-                    <p><strong>Date:</strong> ${formattedDate} | <strong>Time:</strong> ${formattedTime}</p>
-                    <p>${article.content.substring(0, 100)}...</p>
-                    <a href="#" onclick="showFullNews('${doc.id}')">Read more</a>
-                `;
-                newsContainer.appendChild(articleElement);
-            });
+      const doc = await db.collection('news').doc(docId).get();
+      const article = doc.data();
+      const date = article.date.toDate();
+      const formattedDate = date.toLocaleDateString();
+      const formattedTime = date.toLocaleTimeString();
+      const shareUrl = encodeURIComponent(window.location.href + '?article=' + doc.id);
+
+      newsContainer.innerHTML = `
+        <div class="full-news">
+          <img src="${article.imageUrl}" alt="${article.title}" class="full-img">
+          <h2 class="full-title">${article.title}</h2>
+          <p class="news-meta"><strong>Category:</strong> ${article.category}</p>
+          <p class="news-meta"><strong>Date:</strong> ${formattedDate} | <strong>Time:</strong> ${formattedTime}</p>
+          <p class="full-content">${article.content}</p>
+          <div class="social-share">
+            <a href="https://www.facebook.com/sharer/sharer.php?u=${shareUrl}" target="_blank" class="share-btn"><i class="fab fa-facebook-f"></i></a>
+            <a href="https://twitter.com/intent/tweet?url=${shareUrl}&text=${encodeURIComponent(article.title)}" target="_blank" class="share-btn"><i class="fab fa-twitter"></i></a>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=${shareUrl}&title=${encodeURIComponent(article.title)}" target="_blank" class="share-btn"><i class="fab fa-linkedin-in"></i></a>
+            <a href="https://wa.me/?text=${encodeURIComponent(article.title + ' - ' + window.location.href)}" target="_blank" class="share-btn"><i class="fab fa-whatsapp"></i></a>
+          </div>
+          <a href="index.html" class="read-more">Back to Home</a>
+        </div>
+      `;
+      debounceIncrementViews(docId);
+      fetchRelatedArticles(article.category, docId);
+    }
+
+    async function fetchNews(page = 1) {
+      const newsContainer = document.getElementById('newsContainer');
+      const pagination = document.getElementById('pagination');
+      newsContainer.innerHTML = '<p class="loading">Loading news...</p>';
+      pagination.innerHTML = '';
+
+      try {
+        const snapshot = await db.collection('news').orderBy('date', 'desc').get();
+        if (snapshot.empty) {
+          newsContainer.innerHTML = '<p class="no-news">No news articles found.</p>';
+          return;
         }
 
-        
-        async function fetchNews() {
-            const newsContainer = document.getElementById('newsContainer');
-            newsContainer.innerHTML = '<p>Loading news...</p>'; 
-            try {
-                const snapshot = await db.collection('news').orderBy('date', 'desc').get();
-                if (snapshot.empty) {
-                    newsContainer.innerHTML = '<p>No news articles found.</p>';
-                    return;
-                }
-                renderNewsArticles(snapshot, newsContainer);
-            } catch (error) {
-                console.error('Error fetching news:', error);
-                newsContainer.innerHTML = '<p>Failed to load news. Please try again later.</p>';
-            }
+        const totalItems = snapshot.docs.length;
+        const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+        const startIndex = (page - 1) * ITEMS_PER_PAGE;
+        const endIndex = startIndex + ITEMS_PER_PAGE;
+
+        renderNewsArticles(snapshot, newsContainer, startIndex, endIndex);
+
+        // Pagination controls
+        if (totalPages > 1) {
+          for (let i = 1; i <= totalPages; i++) {
+            const button = document.createElement('button');
+            button.textContent = i;
+            button.className = 'page-btn' + (i === page ? ' active' : '');
+            button.onclick = () => fetchNews(i);
+            pagination.appendChild(button);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching news:', error);
+        newsContainer.innerHTML = '<p class="error-msg">Failed to load news. Please try again later.</p>';
+      }
+    }
+
+    async function fetchNewsByCategory(category, page = 1) {
+      const newsContainer = document.getElementById('newsContainer');
+      const pagination = document.getElementById('pagination');
+      newsContainer.innerHTML = '<p class="loading">Loading news...</p>';
+      pagination.innerHTML = '';
+
+      try {
+        const snapshot = await db.collection('news')
+          .where('category', '==', category.toLowerCase())
+          .orderBy('date', 'desc')
+          .get();
+        if (snapshot.empty) {
+          newsContainer.innerHTML = `<p class="no-news">No news articles found in the ${category} category.</p>`;
+          return;
         }
 
-        
-        async function fetchNewsByCategory(category) {
-            const newsContainer = document.getElementById('newsContainer');
-            newsContainer.innerHTML = '<p>Loading news...</p>'; 
-            try {
-                const snapshot = await db.collection('news')
-                    .where('category', '==', category.toLowerCase()) 
-                    .orderBy('date', 'desc')
-                    .get();
+        const totalItems = snapshot.docs.length;
+        const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+        const startIndex = (page - 1) * ITEMS_PER_PAGE;
+        const endIndex = startIndex + ITEMS_PER_PAGE;
 
-                if (snapshot.empty) {
-                    newsContainer.innerHTML = `<p>No news articles found in the ${category} category.</p>`;
-                    return;
-                }
+        renderNewsArticles(snapshot, newsContainer, startIndex, endIndex);
 
-                renderNewsArticles(snapshot, newsContainer);
-            } catch (error) {
-                console.error('Error fetching news by category:', error);
-                newsContainer.innerHTML = '<p>Failed to load news. Please try again later.</p>';
-            }
+        // Pagination controls
+        if (totalPages > 1) {
+          for (let i = 1; i <= totalPages; i++) {
+            const button = document.createElement('button');
+            button.textContent = i;
+            button.className = 'page-btn' + (i === page ? ' active' : '');
+            button.onclick = () => fetchNewsByCategory(category, i);
+            pagination.appendChild(button);
+          }
         }
+      } catch (error) {
+        console.error('Error fetching news by category:', error);
+        newsContainer.innerHTML = '<p class="error-msg">Failed to load news. Please try again later.</p>';
+      }
+    }
 
-    
-        async function fetchCategories() {
-            const categoryFilters = document.getElementById('categoryFilters');
-            try {
-                const snapshot = await db.collection('news').get();
-                const categories = new Set();
+    async function fetchRelatedArticles(category, currentDocId) {
+      const newsContainer = document.getElementById('newsContainer');
+      try {
+        const snapshot = await db.collection('news')
+          .where('category', '==', category.toLowerCase())
+          .orderBy('date', 'desc')
+          .limit(3)
+          .get();
+        renderRelatedArticles(snapshot, newsContainer, category);
+      } catch (error) {
+        console.error('Error fetching related articles:', error);
+      }
+    }
 
-                snapshot.forEach(doc => {
-                    const category = doc.data().category;
-                    if (category) {
-                        categories.add(category);
-                    }
-                });
-
-                
-                categoryFilters.innerHTML = '';
-
-                
-                const allButton = document.createElement('button');
-                allButton.textContent = 'All';
-                allButton.onclick = fetchNews;
-                categoryFilters.appendChild(allButton);
-
-                
-                categories.forEach(category => {
-                    const button = document.createElement('button');
-                    button.textContent = category;
-                    button.onclick = () => fetchNewsByCategory(category);
-                    categoryFilters.appendChild(button);
-                });
-            } catch (error) {
-                console.error('Error fetching categories:', error);
-            }
+    async function fetchBreakingNews() {
+      const tickerContent = document.getElementById('tickerContent');
+      try {
+        const snapshot = await db.collection('breakingNews').orderBy('timestamp', 'desc').limit(5).get();
+        if (snapshot.empty) {
+          tickerContent.textContent = 'No breaking news available.';
+          return;
         }
+        const breakingNews = snapshot.docs.map(doc => doc.data().title).join(' | ');
+        tickerContent.textContent = breakingNews;
+      } catch (error) {
+        console.error('Error fetching breaking news:', error);
+        tickerContent.textContent = 'Breaking News Unavailable.';
+      }
+    }
 
-      
-        function showFullNews(docId) {
-            db.collection('news').doc(docId).get().then(doc => {
-                const article = doc.data();
-                const newsContainer = document.getElementById('newsContainer');
+    function debounceIncrementViews(docId, delay = 1000) {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => incrementViews(docId), delay);
+    }
 
-              
-                const date = article.date.toDate();
-                const formattedDate = date.toLocaleDateString();
-                const formattedTime = date.toLocaleTimeString();
+    async function incrementViews(docId) {
+      try {
+        const viewedRef = db.collection('viewed').doc(docId);
+        const articleRef = db.collection('news').doc(docId);
 
-                newsContainer.innerHTML = `
-                    <div class="full-news">
-                        <img src="${article.imageUrl}" alt="${article.title}">
-                        <h2>${article.title}</h2>
-                        <p><strong>Category:</strong> ${article.category}</p>
-                        <p><strong>Date:</strong> ${formattedDate} | <strong>Time:</strong> ${formattedTime}</p>
-                        <p>${article.content}</p>
-                        <a href="index.html">Back to Home</a>
-                    </div>
-                `;
-            });
-        }
+        const viewedDoc = await viewedRef.get();
+        if (viewedDoc.exists) return;
 
-      
-        fetchNews();
-        fetchCategories();
-    </script>
-</body>
+        await db.runTransaction(async transaction => {
+          const doc = await transaction.get(articleRef);
+          if (!doc.exists) throw new Error('Article not found');
+          const newViews = (doc.data().views || 0) + 1;
+          transaction.update(articleRef, { views: newViews });
+          transaction.set(viewedRef, { timestamp: new Date() });
+        });
+        console.log(`View count updated for article ${docId}`);
+      } catch (error) {
+        console.error("Error incrementing views:", error);
+        alert("Failed to record your view. Please try again or contact support.");
+      }
+    }
+
+    async function fetchCategories() {
+      const categoryFilters = document.getElementById('categoryFilters');
+      try {
+        const snapshot = await db.collection('news').get();
+        const categories = new Set();
+        snapshot.forEach(doc => {
+          const category = doc.data().category;
+          if (category) categories.add(category);
+        });
+        categoryFilters.innerHTML = '';
+        const allButton = document.createElement('button');
+        allButton.textContent = 'All';
+        allButton.className = 'category-btn';
+        allButton.onclick = fetchNews;
+        categoryFilters.appendChild(allButton);
+        categories.forEach(category => {
+          const button = document.createElement('button');
+          button.textContent = category;
+          button.className = 'category-btn';
+          button.onclick = () => fetchNewsByCategory(category);
+          categoryFilters.appendChild(button);
+        });
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+      }
+    }
+
+    setInterval(fetchBreakingNews, 5000);
+    fetchBreakingNews();
+    fetchNews();
+    fetchCategories();
+  </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'933351c22e2fc01f',t:'MTc0NTEzODI0Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
