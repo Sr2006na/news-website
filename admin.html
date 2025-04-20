@@ -5,59 +5,211 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel</title>
     <link rel="stylesheet" href="styles.css">
-    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://www.gstatic.com/firebasejs/7.20.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/7.20.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/7.20.0/firebase-firestore.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <div id="loginSection">
-        <h1>Admin Login</h1>
-        
-        <div id="loginMessage" class="alert" style="display: none;"></div>
-        <form id="loginForm">
-            <label for="email">Email:</label>
-            <input type="email" id="email" name="email" required>
-            <br>
-            <label for="password">Password:</label>
-            <input type="password" id="password" name="password" required>
-            <br>
-            <button type="submit">Login</button>
-        </form>
-    </div>
+    <div class="container-fluid p-4">
+        <h1 class="h3 mb-4 text-primary">Admin Panel</h1>
 
-    <div id="adminSection" style="display: none;">
-        <div style="text-align: right;">
-            <button id="logoutButton">Logout</button>
+        <!-- Login Section -->
+        <div id="loginSection" class="mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Admin Login</h5>
+                    <div id="loginMessage" class="alert" style="display: none;"></div>
+                    <form id="loginForm">
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="password" name="password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Login</button>
+                    </form>
+                </div>
+            </div>
         </div>
-        <h1>Admin Panel</h1>
-      
-        <div id="adminMessage" class="alert" style="display: none;"></div>
-        <form id="newsForm">
-            <label for="title">Title:</label>
-            <input type="text" id="title" name="title" required>
-            <br>
-            <label for="content">Content:</label>
-            <textarea id="content" name="content" required></textarea>
-            <br>
-            <label for="category">Category:</label>
-            <select id="category" name="category" required>
-                <option value="India">India</option>
-                <option value="International">International</option>
-                <option value="Sports">Sports</option>
-                <option value="Technology">Technology</option>
-                <option value="Entertainment">Entertainment</option>
-                <option value="Health">Health</option>
-                <option value="Science">Science</option>
-                <option value="Politics">Politics</option>
-                <option value="Miscellaneous">Miscellaneous</option>
-            </select>
-            <br>
-            <label for="imageUrl">Image URL:</label>
-            <input type="url" id="imageUrl" name="imageUrl" placeholder="Paste image URL" required>
-            <br>
-            <button type="submit">Add News</button>
-        </form>
+
+        <!-- Admin Section -->
+        <div id="adminSection" style="display: none;">
+            <div class="d-flex justify-content-end">
+                <button id="logoutButton" class="btn btn-secondary">Logout</button>
+            </div>
+            <h1 class="h3 mb-4 text-primary"></h1>
+            <div id="adminMessage" class="alert" style="display: none;"></div>
+
+            <!-- Analytics Section -->
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Total Views</h5>
+                            <p id="totalViews" class="display-4">0</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Popular Categories</h5>
+                            <canvas id="categoryChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add News Section -->
+            <div class="row">
+                <div class="col-12 mb-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Add News</h5>
+                            <form id="addNewsForm" class="mb-4">
+                                <div class="mb-3">
+                                    <label for="addTitle" class="form-label">Title</label>
+                                    <input type="text" class="form-control" id="addTitle" name="title" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="addContent" class="form-label">Content</label>
+                                    <textarea class="form-control" id="addContent" name="content" required></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="addCategory" class="form-label">Category</label>
+                                    <select class="form-select" id="addCategory" name="category" required>
+                                        <option value="India">India</option>
+                                        <option value="International">International</option>
+                                        <option value="Sports">Sports</option>
+                                        <option value="Technology">Technology</option>
+                                        <option value="Entertainment">Entertainment</option>
+                                        <option value="Health">Health</option>
+                                        <option value="Science">Science</option>
+                                        <option value="Politics">Politics</option>
+                                        <option value="Miscellaneous">Miscellaneous</option>
+                                        <option value="Business">Business</option>
+<option value="Environment">Environment</option>
+<option value="Culture">Culture</option>
+<option value="Education">Education</option>
+<option value="Crime">Crime</option>
+<option value="Travel">Travel</option>
+<option value="Gaming">Gaming</option>
+<option value="Automotive">Automotive</option>
+
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="addImageUrl" class="form-label">Image URL</label>
+                                    <input type="url" class="form-control" id="addImageUrl" name="imageUrl" placeholder="Paste image URL" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Add News</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Update News Section -->
+            <div class="row">
+                <div class="col-12 mb-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Update News</h5>
+                            <form id="updateNewsForm" class="mb-4">
+                                <div class="mb-3">
+                                    <label for="updateTitle" class="form-label">Title</label>
+                                    <input type="text" class="form-control" id="updateTitle" name="title" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="updateContent" class="form-label">Content</label>
+                                    <textarea class="form-control" id="updateContent" name="content" required></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="updateCategory" class="form-label">Category</label>
+                                    <select class="form-select" id="updateCategory" name="category" required>
+                                        <option value="India">India</option>
+                                        <option value="International">International</option>
+                                        <option value="Sports">Sports</option>
+                                        <option value="Technology">Technology</option>
+                                        <option value="Entertainment">Entertainment</option>
+                                        <option value="Health">Health</option>
+                                        <option value="Science">Science</option>
+                                        <option value="Politics">Politics</option>
+                                        <option value="Miscellaneous">Miscellaneous</option><option value="Business">Business</option>
+<option value="Environment">Environment</option>
+<option value="Culture">Culture</option>
+<option value="Education">Education</option>
+<option value="Crime">Crime</option>
+<option value="Travel">Travel</option>
+<option value="Gaming">Gaming</option>
+<option value="Automotive">Automotive</option>
+ </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="updateImageUrl" class="form-label">Image URL</label>
+                                    <input type="url" class="form-control" id="updateImageUrl" name="imageUrl" placeholder="Paste image URL" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Update News</button>
+                                <button type="button" id="cancelUpdate" class="btn btn-secondary ms-2" style="display: none;">Cancel</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Breaking News Section -->
+            <div class="row">
+                <div class="col-12 mb-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Manage Breaking News</h5>
+                            <form id="breakingNewsForm" class="mb-4">
+                                <div class="mb-3">
+                                    <label for="breakingNewsTitle" class="form-label">Breaking News Title</label>
+                                    <input type="text" class="form-control" id="breakingNewsTitle" name="title" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Add Breaking News</button>
+                            </form>
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Title</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="breakingNewsTable"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Manage Articles Section -->
+            <div class="row">
+                <div class="col-12 mb-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Manage Articles</h5>
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Title</th>
+                                        <th>Category</th>
+                                        <th>Views</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="articlesTable"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -77,68 +229,75 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-      
+        let currentDocId = null;
+
         function showMessage(elementId, message, type) {
             const messageElement = document.getElementById(elementId);
             messageElement.textContent = message;
             messageElement.className = `alert alert-${type}`;
             messageElement.style.display = 'block';
-
-            
-            setTimeout(() => {
-                messageElement.style.display = 'none';
-            }, 5000);
+            setTimeout(() => messageElement.style.display = 'none', 5000);
         }
 
-    
+        function isValidImageUrl(url) {
+            return /\.(jpeg|jpg|gif|png|webp)$/.test(url.toLowerCase()) || url.startsWith('http');
+        }
+
+        auth.onAuthStateChanged(user => {
+            const loginSection = document.getElementById('loginSection');
+            const adminSection = document.getElementById('adminSection');
+            if (user) {
+                loginSection.style.display = 'none';
+                adminSection.style.display = 'block';
+                fetchAnalytics();
+                loadArticles();
+                loadBreakingNews();
+            } else {
+                loginSection.style.display = 'block';
+                adminSection.style.display = 'none';
+                if (currentDocId) {
+                    currentDocId = null;
+                    document.getElementById('updateNewsForm').reset();
+                    document.getElementById('cancelUpdate').style.display = 'none';
+                }
+            }
+        });
+
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
-
             try {
                 await auth.signInWithEmailAndPassword(email, password);
                 showMessage('loginMessage', 'Login successful!', 'success');
-                document.getElementById('loginSection').style.display = 'none';
-                document.getElementById('adminSection').style.display = 'block';
             } catch (error) {
                 showMessage('loginMessage', `Login failed: ${error.message}`, 'error');
             }
         });
 
-    
         document.getElementById('logoutButton').addEventListener('click', () => {
-            auth.signOut();
-            showMessage('adminMessage', 'Logged out successfully!', 'success');
-            document.getElementById('loginSection').style.display = 'block';
-            document.getElementById('adminSection').style.display = 'none';
+            auth.signOut().then(() => {
+                showMessage('adminMessage', 'Logged out successfully!', 'success');
+            }).catch(error => {
+                showMessage('adminMessage', `Logout failed: ${error.message}`, 'error');
+            });
         });
 
-    
-        auth.onAuthStateChanged(user => {
-            if (user) {
-                document.getElementById('loginSection').style.display = 'none';
-                document.getElementById('adminSection').style.display = 'block';
-            } else {
-                document.getElementById('loginSection').style.display = 'block';
-                document.getElementById('adminSection').style.display = 'none';
-            }
-        });
-
-    
-        document.getElementById('newsForm').addEventListener('submit', async (e) => {
+        document.getElementById('addNewsForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const title = document.getElementById('title').value;
-            const content = document.getElementById('content').value;
-            const category = document.getElementById('category').value.trim().toLowerCase(); 
-            const imageUrl = document.getElementById('imageUrl').value;
-
-          
-            if (!isValidImageUrl(imageUrl)) {
-                showMessage('adminMessage', 'Please provide a valid image URL (e.g., .jpg, .png, .gif).', 'error');
+            if (!auth.currentUser) {
+                showMessage('adminMessage', 'Please log in to add articles.', 'error');
                 return;
             }
+            const title = document.getElementById('addTitle').value;
+            const content = document.getElementById('addContent').value;
+            const category = document.getElementById('addCategory').value.trim().toLowerCase();
+            const imageUrl = document.getElementById('addImageUrl').value;
 
+            if (!isValidImageUrl(imageUrl)) {
+                showMessage('adminMessage', 'Please provide a valid image URL.', 'error');
+                return;
+            }
             if (!title || !content || !category || !imageUrl) {
                 showMessage('adminMessage', 'Please fill out all fields.', 'error');
                 return;
@@ -146,22 +305,259 @@
 
             try {
                 await db.collection('news').add({
-                    title,
-                    content,
-                    category,
-                    imageUrl,
-                    date: new Date()
+                    title, content, category, imageUrl, date: new Date(), views: 0
                 });
-                showMessage('adminMessage', 'News added successfully!', 'success');
-                document.getElementById('newsForm').reset();
+                showMessage('adminMessage', 'Article added successfully!', 'success');
+                document.getElementById('addNewsForm').reset();
+                fetchAnalytics();
+                loadArticles();
             } catch (error) {
-                showMessage('adminMessage', `Failed to add news: ${error.message}`, 'error');
+                showMessage('adminMessage', `Failed to add article: ${error.message}`, 'error');
             }
         });
 
-      
-        function isValidImageUrl(url) {
-            return /\.(jpeg|jpg|gif|png|webp)$/.test(url);
+        document.getElementById('updateNewsForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!auth.currentUser) {
+                showMessage('adminMessage', 'Please log in to update articles.', 'error');
+                return;
+            }
+            if (!currentDocId) {
+                showMessage('adminMessage', 'Please select an article to update.', 'error');
+                return;
+            }
+            const title = document.getElementById('updateTitle').value;
+            const content = document.getElementById('updateContent').value;
+            const category = document.getElementById('updateCategory').value.trim().toLowerCase();
+            const imageUrl = document.getElementById('updateImageUrl').value;
+
+            if (!isValidImageUrl(imageUrl)) {
+                showMessage('adminMessage', 'Please provide a valid image URL.', 'error');
+                return;
+            }
+            if (!title || !content || !category || !imageUrl) {
+                showMessage('adminMessage', 'Please fill out all fields.', 'error');
+                return;
+            }
+
+            try {
+                await db.collection('news').doc(currentDocId).update({
+                    title, content, category, imageUrl, date: new Date()
+                });
+                showMessage('adminMessage', 'Article updated successfully!', 'success');
+                currentDocId = null;
+                document.getElementById('updateNewsForm').reset();
+                document.getElementById('cancelUpdate').style.display = 'none';
+                fetchAnalytics();
+                loadArticles();
+            } catch (error) {
+                showMessage('adminMessage', `Failed to update article: ${error.message}`, 'error');
+            }
+        });
+
+        document.getElementById('cancelUpdate').addEventListener('click', () => {
+            currentDocId = null;
+            document.getElementById('updateNewsForm').reset();
+            document.getElementById('cancelUpdate').style.display = 'none';
+        });
+
+        document.getElementById('breakingNewsForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!auth.currentUser) {
+                showMessage('adminMessage', 'Please log in to manage breaking news.', 'error');
+                return;
+            }
+            const title = document.getElementById('breakingNewsTitle').value;
+
+            if (!title) {
+                showMessage('adminMessage', 'Please enter a breaking news title.', 'error');
+                return;
+            }
+
+            try {
+                await db.collection('breakingNews').add({
+                    title,
+                    timestamp: new Date()
+                });
+                showMessage('adminMessage', 'Breaking news added successfully!', 'success');
+                document.getElementById('breakingNewsForm').reset();
+                loadBreakingNews();
+            } catch (error) {
+                showMessage('adminMessage', `Failed to add breaking news: ${error.message}`, 'error');
+            }
+        });
+
+        async function loadArticles() {
+            const tbody = document.querySelector('#articlesTable');
+            tbody.innerHTML = '<tr><td colspan="4">Loading...</td></tr>';
+            try {
+                const snapshot = await db.collection('news').get();
+                tbody.innerHTML = '';
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${data.title}</td>
+                        <td>${data.category}</td>
+                        <td>${data.views || 0}</td>
+                        <td>
+                            <button class="btn btn-warning btn-sm edit-btn" data-id="${doc.id}">Edit</button>
+                            <button class="btn btn-danger btn-sm delete-btn" data-id="${doc.id}">Delete</button>
+                            <button class="btn btn-info btn-sm reset-views-btn" data-id="${doc.id}">Reset Views</button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+                document.querySelectorAll('.edit-btn').forEach(button => {
+                    button.addEventListener('click', () => editArticle(button.dataset.id));
+                });
+                document.querySelectorAll('.delete-btn').forEach(button => {
+                    button.addEventListener('click', () => deleteArticle(button.dataset.id));
+                });
+                document.querySelectorAll('.reset-views-btn').forEach(button => {
+                    button.addEventListener('click', () => resetViews(button.dataset.id));
+                });
+            } catch (error) {
+                showMessage('adminMessage', `Failed to load articles: ${error.message}`, 'error');
+            }
+        }
+
+        async function loadBreakingNews() {
+            const tbody = document.querySelector('#breakingNewsTable');
+            tbody.innerHTML = '<tr><td colspan="2">Loading...</td></tr>';
+            try {
+                const snapshot = await db.collection('breakingNews').orderBy('timestamp', 'desc').get();
+                tbody.innerHTML = '';
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${data.title}</td>
+                        <td>
+                            <button class="btn btn-danger btn-sm delete-btn" data-id="${doc.id}">Delete</button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+                document.querySelectorAll('.delete-btn').forEach(button => {
+                    button.addEventListener('click', () => deleteBreakingNews(button.dataset.id));
+                });
+            } catch (error) {
+                showMessage('adminMessage', `Failed to load breaking news: ${error.message}`, 'error');
+            }
+        }
+
+        async function editArticle(docId) {
+            if (!auth.currentUser) {
+                showMessage('adminMessage', 'Please log in to edit articles.', 'error');
+                return;
+            }
+            currentDocId = docId;
+            try {
+                const doc = await db.collection('news').doc(docId).get();
+                if (doc.exists) {
+                    const data = doc.data();
+                    document.getElementById('updateTitle').value = data.title;
+                    document.getElementById('updateContent').value = data.content;
+                    document.getElementById('updateCategory').value = data.category;
+                    document.getElementById('updateImageUrl').value = data.imageUrl;
+                    document.getElementById('cancelUpdate').style.display = 'inline-block';
+                } else {
+                    showMessage('adminMessage', 'Article not found.', 'error');
+                }
+            } catch (error) {
+                showMessage('adminMessage', `Failed to load article: ${error.message}`, 'error');
+            }
+        }
+
+        async function deleteArticle(docId) {
+            if (!auth.currentUser) {
+                showMessage('adminMessage', 'Please log in to delete articles.', 'error');
+                return;
+            }
+            if (confirm('Are you sure you want to delete this article?')) {
+                try {
+                    await db.collection('news').doc(docId).delete();
+                    showMessage('adminMessage', 'Article deleted successfully!', 'success');
+                    fetchAnalytics();
+                    loadArticles();
+                } catch (error) {
+                    showMessage('adminMessage', `Failed to delete article: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        async function deleteBreakingNews(docId) {
+            if (!auth.currentUser) {
+                showMessage('adminMessage', 'Please log in to delete breaking news.', 'error');
+                return;
+            }
+            if (confirm('Are you sure you want to delete this breaking news?')) {
+                try {
+                    await db.collection('breakingNews').doc(docId).delete();
+                    showMessage('adminMessage', 'Breaking news deleted successfully!', 'success');
+                    loadBreakingNews();
+                } catch (error) {
+                    showMessage('adminMessage', `Failed to delete breaking news: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        async function resetViews(docId) {
+            if (!auth.currentUser) {
+                showMessage('adminMessage', 'Please log in to reset views.', 'error');
+                return;
+            }
+            if (confirm('Are you sure you want to reset the view count for this article?')) {
+                try {
+                    await db.collection('news').doc(docId).update({ views: 0 });
+                    await db.collection('viewed').doc(docId).delete();
+                    showMessage('adminMessage', 'View count reset successfully!', 'success');
+                    fetchAnalytics();
+                    loadArticles();
+                } catch (error) {
+                    showMessage('adminMessage', `Failed to reset views: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        function fetchAnalytics() {
+            db.collection('news').onSnapshot(snapshot => {
+                let totalViews = 0;
+                const categoryCounts = {};
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    totalViews += data.views || 0;
+                    const category = data.category || 'Uncategorized';
+                    categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+                });
+
+                document.getElementById('totalViews').textContent = totalViews;
+
+                const categories = Object.keys(categoryCounts);
+                const counts = Object.values(categoryCounts);
+                const categoryChart = Chart.getChart('categoryChart');
+                if (categoryChart) categoryChart.destroy();
+                new Chart(document.getElementById('categoryChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: categories,
+                        datasets: [{
+                            label: 'Number of Articles',
+                            data: counts,
+                            backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        scales: { y: { beginAtZero: true } },
+                        responsive: true
+                    }
+                });
+            }, error => {
+                showMessage('adminMessage', 'Error loading data: ' + error.message, 'error');
+            });
         }
     </script>
 </body>
