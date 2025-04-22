@@ -20,6 +20,11 @@
         </div>
       </div>
     </div>
+    
+                    <nav class="main-nav">
+                    <ul>
+                        <li><a href="index.html">Home</a></li>
+                        </nav>
     <div id="breakingNewsTicker" class="breaking-news-ticker">
       <marquee behavior="scroll" direction="left" scrollamount="6" onmouseover="this.stop()" onmouseout="this.start()">
         <span id="tickerContent"></span>
@@ -304,11 +309,7 @@
           if (category) categories.add(category);
         });
         categoryFilters.innerHTML = '';
-        const allButton = document.createElement('button');
-        allButton.textContent = 'All';
-        allButton.className = 'category-btn';
-        allButton.onclick = fetchNews;
-        categoryFilters.appendChild(allButton);
+        
         categories.forEach(category => {
           const button = document.createElement('button');
           button.textContent = category;
