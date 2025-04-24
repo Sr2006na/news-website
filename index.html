@@ -21,10 +21,11 @@
       </div>
     </div>
     
-                    <nav class="main-nav">
-                    <ul>
-                        <li><a href="index.html">Home</a></li>
-                        </nav>
+    <nav class="main-nav">
+      <ul>
+        <li><a href="index.html">Home</a></li>
+      </ul>
+    </nav>
     <div id="breakingNewsTicker" class="breaking-news-ticker">
       <marquee behavior="scroll" direction="left" scrollamount="6" onmouseover="this.stop()" onmouseout="this.start()">
         <span id="tickerContent"></span>
@@ -72,6 +73,7 @@
 
     let debounceTimer = null;
     const ITEMS_PER_PAGE = 6;
+    const MAX_PAGE_BUTTONS = 5; // Maximum number of page buttons to display at once
 
     function renderNewsArticles(snapshot, newsContainer, startIndex, endIndex) {
       newsContainer.innerHTML = '';
@@ -167,11 +169,76 @@
       fetchRelatedArticles(article.category, docId);
     }
 
+    function renderPagination(totalPages, currentPage, fetchFunction, category = null) {
+      const pagination = document.getElementById('pagination');
+      pagination.innerHTML = '';
+
+      if (totalPages <= 1) return;
+
+      // Previous Button
+      const prevButton = document.createElement('button');
+      prevButton.textContent = 'Previous';
+      prevButton.className = 'page-btn' + (currentPage === 1 ? ' disabled' : '');
+      prevButton.onclick = currentPage > 1 ? () => fetchFunction(category, currentPage - 1) : null;
+      pagination.appendChild(prevButton);
+
+      // Calculate the range of page numbers to display
+      let startPage = Math.max(1, currentPage - Math.floor(MAX_PAGE_BUTTONS / 2));
+      let endPage = Math.min(totalPages, startPage + MAX_PAGE_BUTTONS - 1);
+      startPage = Math.max(1, endPage - MAX_PAGE_BUTTONS + 1);
+
+      // Add ellipsis if there are pages before startPage
+      if (startPage > 1) {
+        const firstPageButton = document.createElement('button');
+        firstPageButton.textContent = '1';
+        firstPageButton.className = 'page-btn';
+        firstPageButton.onclick = () => fetchFunction(category, 1);
+        pagination.appendChild(firstPageButton);
+
+        if (startPage > 2) {
+          const ellipsis = document.createElement('span');
+          ellipsis.textContent = '...';
+          ellipsis.className = 'page-ellipsis';
+          pagination.appendChild(ellipsis);
+        }
+      }
+
+      // Page number buttons
+      for (let i = startPage; i <= endPage; i++) {
+        const button = document.createElement('button');
+        button.textContent = i;
+        button.className = 'page-btn' + (i === currentPage ? ' active' : '');
+        button.onclick = () => fetchFunction(category, i);
+        pagination.appendChild(button);
+      }
+
+      // Add ellipsis if there are pages after endPage
+      if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+          const ellipsis = document.createElement('span');
+          ellipsis.textContent = '...';
+          ellipsis.className = 'page-ellipsis';
+          pagination.appendChild(ellipsis);
+        }
+
+        const lastPageButton = document.createElement('button');
+        lastPageButton.textContent = totalPages;
+        lastPageButton.className = 'page-btn';
+        lastPageButton.onclick = () => fetchFunction(category, totalPages);
+        pagination.appendChild(lastPageButton);
+      }
+
+      // Next Button
+      const nextButton = document.createElement('button');
+      nextButton.textContent = 'Next';
+      nextButton.className = 'page-btn' + (currentPage === totalPages ? ' disabled' : '');
+      nextButton.onclick = currentPage < totalPages ? () => fetchFunction(category, currentPage + 1) : null;
+      pagination.appendChild(nextButton);
+    }
+
     async function fetchNews(page = 1) {
       const newsContainer = document.getElementById('newsContainer');
-      const pagination = document.getElementById('pagination');
       newsContainer.innerHTML = '<p class="loading">Loading news...</p>';
-      pagination.innerHTML = '';
 
       try {
         const snapshot = await db.collection('news').orderBy('date', 'desc').get();
@@ -186,17 +253,7 @@
         const endIndex = startIndex + ITEMS_PER_PAGE;
 
         renderNewsArticles(snapshot, newsContainer, startIndex, endIndex);
-
-        // Pagination controls
-        if (totalPages > 1) {
-          for (let i = 1; i <= totalPages; i++) {
-            const button = document.createElement('button');
-            button.textContent = i;
-            button.className = 'page-btn' + (i === page ? ' active' : '');
-            button.onclick = () => fetchNews(i);
-            pagination.appendChild(button);
-          }
-        }
+        renderPagination(totalPages, page, (cat, pg) => fetchNews(pg));
       } catch (error) {
         console.error('Error fetching news:', error);
         newsContainer.innerHTML = '<p class="error-msg">Failed to load news. Please try again later.</p>';
@@ -205,9 +262,7 @@
 
     async function fetchNewsByCategory(category, page = 1) {
       const newsContainer = document.getElementById('newsContainer');
-      const pagination = document.getElementById('pagination');
       newsContainer.innerHTML = '<p class="loading">Loading news...</p>';
-      pagination.innerHTML = '';
 
       try {
         const snapshot = await db.collection('news')
@@ -225,17 +280,7 @@
         const endIndex = startIndex + ITEMS_PER_PAGE;
 
         renderNewsArticles(snapshot, newsContainer, startIndex, endIndex);
-
-        // Pagination controls
-        if (totalPages > 1) {
-          for (let i = 1; i <= totalPages; i++) {
-            const button = document.createElement('button');
-            button.textContent = i;
-            button.className = 'page-btn' + (i === page ? ' active' : '');
-            button.onclick = () => fetchNewsByCategory(category, i);
-            pagination.appendChild(button);
-          }
-        }
+        renderPagination(totalPages, page, fetchNewsByCategory, category);
       } catch (error) {
         console.error('Error fetching news by category:', error);
         newsContainer.innerHTML = '<p class="error-msg">Failed to load news. Please try again later.</p>';
@@ -327,5 +372,5 @@
     fetchNews();
     fetchCategories();
   </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'933351c22e2fc01f',t:'MTc0NTEzODI0Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'933351c22e2fc01f',t:'MTc0NTEzODI0Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'93538952e8ea071f',t:'MTc0NTQ3NjA2My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
