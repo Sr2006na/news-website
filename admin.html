@@ -228,9 +228,39 @@
                             <div class="card">
                                 <div class="card-body">
                                     <h5 class="card-title">Manage Articles</h5>
+                                    <div class="mb-3 d-flex gap-2 align-items-center">
+                                        <select id="bulkAction" class="form-select w-auto">
+                                            <option value="" disabled selected>Select Bulk Action</option>
+                                            <option value="delete">Delete Selected</option>
+                                            <option value="resetViews">Reset Views</option>
+                                            <option value="changeCategory">Change Category</option>
+                                        </select>
+                                        <select id="bulkCategory" class="form-select w-auto" style="display: none;">
+                                            <option value="" disabled selected>Select Category</option>
+                                            <option value="India">India</option>
+                                            <option value="International">International</option>
+                                            <option value="Sports">Sports</option>
+                                            <option value="Technology">Technology</option>
+                                            <option value="Entertainment">Entertainment</option>
+                                            <option value="Health">Health</option>
+                                            <option value="Science">Science</option>
+                                            <option value="Politics">Politics</option>
+                                            <option value="Miscellaneous">Miscellaneous</option>
+                                            <option value="Business">Business</option>
+                                            <option value="Environment">Environment</option>
+                                            <option value="Culture">Culture</option>
+                                            <option value="Education">Education</option>
+                                            <option value="Crime">Crime</option>
+                                            <option value="Travel">Travel</option>
+                                            <option value="Gaming">Gaming</option>
+                                            <option value="Automotive">Automotive</option>
+                                        </select>
+                                        <button id="applyBulkAction" class="btn btn-primary">Apply</button>
+                                    </div>
                                     <table class="table table-striped">
                                         <thead>
                                             <tr>
+                                                <th><input type="checkbox" id="selectAllArticles"></th>
                                                 <th>Title</th>
                                                 <th>Category</th>
                                                 <th>Views</th>
@@ -347,6 +377,91 @@
             darkModeToggle.addEventListener('change', () => {
                 document.body.classList.toggle('dark-mode');
                 localStorage.setItem('darkMode', darkModeToggle.checked);
+            });
+
+            // Bulk Actions Logic
+            const bulkActionSelect = document.getElementById('bulkAction');
+            const bulkCategorySelect = document.getElementById('bulkCategory');
+            const applyBulkActionBtn = document.getElementById('applyBulkAction');
+            const selectAllCheckbox = document.getElementById('selectAllArticles');
+
+            bulkActionSelect.addEventListener('change', () => {
+                bulkCategorySelect.style.display = bulkActionSelect.value === 'changeCategory' ? 'inline-block' : 'none';
+            });
+
+            selectAllCheckbox.addEventListener('change', () => {
+                const checkboxes = document.querySelectorAll('.article-checkbox');
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = selectAllCheckbox.checked;
+                });
+            });
+
+            applyBulkActionBtn.addEventListener('click', async () => {
+                const selectedArticles = Array.from(document.querySelectorAll('.article-checkbox:checked')).map(checkbox => checkbox.dataset.id);
+                if (selectedArticles.length === 0) {
+                    showMessage('adminMessage', 'Please select at least one article.', 'error');
+                    return;
+                }
+
+                const action = bulkActionSelect.value;
+                if (!action) {
+                    showMessage('adminMessage', 'Please select a bulk action.', 'error');
+                    return;
+                }
+
+                if (action === 'delete') {
+                    if (!confirm(`Are you sure you want to delete ${selectedArticles.length} article(s)?`)) return;
+                    try {
+                        const batch = db.batch();
+                        selectedArticles.forEach(docId => {
+                            const docRef = db.collection('news').doc(docId);
+                            batch.delete(docRef);
+                        });
+                        await batch.commit();
+                        showMessage('adminMessage', 'Selected articles deleted successfully!', 'success');
+                        fetchAnalytics();
+                        loadArticles();
+                    } catch (error) {
+                        showMessage('adminMessage', `Failed to delete articles: ${error.message}`, 'error');
+                    }
+                } else if (action === 'resetViews') {
+                    if (!confirm(`Are you sure you want to reset views for ${selectedArticles.length} article(s)?`)) return;
+                    try {
+                        const batch = db.batch();
+                        selectedArticles.forEach(docId => {
+                            const docRef = db.collection('news').doc(docId);
+                            batch.update(docRef, { views: 0 });
+                            const viewedRef = db.collection('viewed').doc(docId);
+                            batch.delete(viewedRef);
+                        });
+                        await batch.commit();
+                        showMessage('adminMessage', 'Views reset successfully for selected articles!', 'success');
+                        fetchAnalytics();
+                        loadArticles();
+                    } catch (error) {
+                        showMessage('adminMessage', `Failed to reset views: ${error.message}`, 'error');
+                    }
+                } else if (action === 'changeCategory') {
+                    const newCategory = bulkCategorySelect.value;
+                    if (!newCategory) {
+                        showMessage('adminMessage', 'Please select a category.', 'error');
+                        return;
+                    }
+                    if (!confirm(`Are you sure you want to change the category of ${selectedArticles.length} article(s) to ${newCategory}?`)) return;
+                    try {
+                        const batch = db.batch();
+                        selectedArticles.forEach(docId => {
+                            const docRef = db.collection('news').doc(docId);
+                            batch.update(docRef, { category: newCategory.toLowerCase() });
+                        });
+                        await batch.commit();
+                        showMessage('adminMessage', `Category updated to ${newCategory} for selected articles!`, 'success');
+                        fetchAnalytics();
+                        loadArticles();
+                    } catch (error) {
+                        showMessage('adminMessage', `Failed to change category: ${error.message}`, 'error');
+                    }
+                }
             });
         });
 
@@ -496,7 +611,7 @@
 
         async function loadArticles() {
             const tbody = document.querySelector('#articlesTable');
-            tbody.innerHTML = '<tr><td colspan="4">Loading...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5">Loading...</td></tr>';
             try {
                 const snapshot = await db.collection('news').get();
                 tbody.innerHTML = '';
@@ -504,6 +619,7 @@
                     const data = doc.data();
                     const row = document.createElement('tr');
                     row.innerHTML = `
+                        <td><input type="checkbox" class="article-checkbox" data-id="${doc.id}"></td>
                         <td>${data.title}</td>
                         <td>${data.category}</td>
                         <td>${data.views || 0}</td>
@@ -524,6 +640,8 @@
                 document.querySelectorAll('.reset-views-btn').forEach(button => {
                     button.addEventListener('click', () => resetViews(button.dataset.id));
                 });
+                // Reset Select All checkbox
+                document.getElementById('selectAllArticles').checked = false;
             } catch (error) {
                 showMessage('adminMessage', `Failed to load articles: ${error.message}`, 'error');
             }
