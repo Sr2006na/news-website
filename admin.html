@@ -10,6 +10,8 @@
     <script src="https://www.gstatic.com/firebasejs/7.20.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/7.20.0/firebase-firestore.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.20.0/firebase-storage.js"></script>
+
 </head>
 <body>
     <div class="container-fluid p-4">
@@ -35,6 +37,10 @@
                 </div>
             </div>
         </div>
+
+        
+
+
 
         <!-- Admin Section -->
         <div id="adminSection" style="display: none;">
@@ -70,6 +76,8 @@
             <!-- Accordion for Sections -->
             <div class="accordion" id="adminAccordion">
                 <!-- Add News Section -->
+
+         
                 <div class="accordion-item">
                     <h2 class="accordion-header" id="headingAddNews">
                         <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAddNews" aria-expanded="true" aria-controls="collapseAddNews">
@@ -112,13 +120,18 @@
                                                 <option value="Automotive">Automotive</option>
                                             </select>
                                         </div>
+                                        <label for="addTags">Tags (comma separated)</label>
+                                        <input type="text" id="addTags" class="form-control" placeholder="#Politics, #India, #Tech">
                                         <div class="mb-3">
                                             <label for="addImageUrl" class="form-label">Image URL</label>
                                             <input type="url" class="form-control" id="addImageUrl" name="imageUrl" placeholder="Paste image URL" required>
+                                            <label for="addVideoFile" class="form-label">Upload Video</label>
+                                            <input type="file" class="form-control" id="addVideoFile" accept="video/*">                                            
                                         </div>
                                         <button type="submit" class="btn btn-primary">Add News</button>
                                         <button type="button" class="btn btn-info ms-2" onclick="previewArticle('addNewsForm')">Preview</button>
                                     </form>
+                                    
                                 </div>
                             </div>
                         </div>
@@ -168,6 +181,11 @@
                                                 <option value="Automotive">Automotive</option>
                                             </select>
                                         </div>
+                                        <label for="addTags">Tags (comma separated)</label>
+                                        <input type="text" id="addTags" class="form-control" placeholder="#Politics, #India, #Tech">
+                                        <label for="addVideoFile" class="form-label">Upload Video</label>
+                                        <input type="file" class="form-control" id="addVideoFile" accept="video/*">
+
                                         <div class="mb-3">
                                             <label for="updateImageUrl" class="form-label">Image URL</label>
                                             <input type="url" class="form-control" id="updateImageUrl" name="imageUrl" placeholder="Paste image URL" required>
@@ -538,44 +556,56 @@
             }
         });
 
-        document.getElementById('updateNewsForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (!auth.currentUser) {
-                showMessage('adminMessage', 'Please log in to update articles.', 'error');
-                return;
-            }
-            if (!currentDocId) {
-                showMessage('adminMessage', 'Please select an article to update.', 'error');
-                return;
-            }
-            const title = document.getElementById('updateTitle').value;
-            const content = document.getElementById('updateContent').value;
-            const category = document.getElementById('updateCategory').value.trim().toLowerCase();
-            const imageUrl = document.getElementById('updateImageUrl').value;
+        document.getElementById('addNewsForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!auth.currentUser) {
+        showMessage('adminMessage', 'Please log in to add articles.', 'error');
+        return;
+    }
 
-            if (!isValidImageUrl(imageUrl)) {
-                showMessage('adminMessage', 'Please provide a valid image URL.', 'error');
-                return;
-            }
-            if (!title || !content || !category || !imageUrl) {
-                showMessage('adminMessage', 'Please fill out all fields.', 'error');
-                return;
-            }
+    const title = document.getElementById('addTitle').value;
+    const content = document.getElementById('addContent').value;
+    const category = document.getElementById('addCategory').value.trim().toLowerCase();
+    const imageUrl = document.getElementById('addImageUrl').value;
+    const rawTags = document.getElementById('addTags').value;
+    const tags = rawTags.split(',').map(tag => tag.trim().toLowerCase());
+    const embedUrl = document.getElementById('addVideoUrl').value.trim();
+    const videoFile = document.getElementById('addVideoFile').files[0];
 
-            try {
-                await db.collection('news').doc(currentDocId).update({
-                    title, content, category, imageUrl, date: new Date()
-                });
-                showMessage('adminMessage', 'Article updated successfully!', 'success');
-                currentDocId = null;
-                document.getElementById('updateNewsForm').reset();
-                document.getElementById('cancelUpdate').style.display = 'none';
-                fetchAnalytics();
-                loadArticles();
-            } catch (error) {
-                showMessage('adminMessage', `Failed to update article: ${error.message}`, 'error');
-            }
+    let videoUrl = embedUrl;
+
+    if (!videoUrl && videoFile) {
+        try {
+            const storageRef = firebase.storage().ref();
+            const fileRef = storageRef.child(`videos/${Date.now()}_${videoFile.name}`);
+            const snapshot = await fileRef.put(videoFile);
+            videoUrl = await snapshot.ref.getDownloadURL();
+        } catch (uploadErr) {
+            showMessage('adminMessage', `Video upload failed: ${uploadErr.message}`, 'error');
+            return;
+        }
+    }
+
+    try {
+        const docRef = await db.collection('news').add({
+            title,
+            content,
+            category,
+            imageUrl,
+            videoUrl,
+            tags,
+            views: 0,
+            date: new Date()
         });
+        showMessage('adminMessage', 'Article added successfully!', 'success');
+        document.getElementById('addNewsForm').reset();
+        fetchAnalytics();
+        loadArticles();
+    } catch (error) {
+        showMessage('adminMessage', `Failed to add article: ${error.message}`, 'error');
+    }
+});
+
 
         document.getElementById('cancelUpdate').addEventListener('click', () => {
             currentDocId = null;
@@ -787,6 +817,8 @@
                 showMessage('adminMessage', 'Error loading data: ' + error.message, 'error');
             });
         }
+
+
     </script>
 <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'93538952e8e4b0bb',t:'MTc0NTQ3NjA2My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
