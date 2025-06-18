@@ -2,10 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>News Website</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"/>
   <link rel="stylesheet" href="styles.css"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://www.gstatic.com/firebasejs/7.20.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/7.20.0/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/7.20.0/firebase-firestore.js"></script>
@@ -33,6 +35,20 @@
     </div>
   </header>
 
+  <!-- Top Stories Section -->
+  <div class="container my-5">
+    <h2 class="section-title">Top Stories</h2>
+    <div id="topStoriesCarousel" class="carousel slide" data-bs-ride="carousel">
+      <div class="carousel-inner" id="topStoriesInner"></div>
+      <button class="carousel-control-prev" type="button" data-bs-target="#topStoriesCarousel" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+      </button>
+      <button class="carousel-control-next" type="button" data-bs-target="#topStoriesCarousel" data-bs-slide="next">
+        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+      </button>
+    </div>
+  </div>
+
   <div id="categoryFilters" class="category-filters"></div>
 
   <main>
@@ -50,6 +66,9 @@
     </div>
   </footer>
 
+ 
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyBzwTHxw6Y9opozv3AsjCvDQwLYoVB56YE",
@@ -70,6 +89,36 @@
     auth.signInAnonymously().catch(function(error) {
       console.error("Error signing in anonymously:", error);
     });
+
+
+    async function loadTopStories() {
+      const container = document.getElementById('topStoriesInner');
+      container.innerHTML = '<div class="text-center p-4">Loading...</div>';
+      try {
+        const snapshot = await db.collection('news').orderBy('views', 'desc').limit(5).get();
+        container.innerHTML = '';
+        let isFirst = true;
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          const item = document.createElement('div');
+          item.className = `carousel-item${isFirst ? ' active' : ''}`;
+          item.innerHTML = `
+            <img src="${data.imageUrl}" class="d-block w-100" style="max-height: 400px; object-fit: cover;" alt="${data.title}">
+            <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded p-2">
+              <h5>${data.title}</h5>
+              <p>${data.content.substring(0, 100)}...</p>
+            </div>
+          `;
+          container.appendChild(item);
+          isFirst = false;
+        });
+      } catch (err) {
+        container.innerHTML = `<div class="text-danger text-center p-4">Error loading top stories: ${err.message}</div>`;
+      }
+    }
+
+
+
 
     let debounceTimer = null;
     const ITEMS_PER_PAGE = 6;
@@ -138,6 +187,62 @@
       newsContainer.appendChild(relatedSection);
     }
 
+    // Fetch existing comments
+async function loadComments(articleId) {
+  const commentsList = document.getElementById('commentsList');
+  commentsList.innerHTML = '<p class="loading">Loading comments...</p>';
+  try {
+    const snapshot = await db.collection('comments')
+      .where('articleId', '==', articleId)
+      .orderBy('timestamp', 'asc')
+      .get();
+    if (snapshot.empty) {
+      commentsList.innerHTML = '<p>No comments yet. Be the first!</p>';
+      return;
+    }
+    commentsList.innerHTML = '';
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      const date = data.timestamp?.toDate();
+      const formatted = date ? date.toLocaleString() : '';
+      const li = document.createElement('div');
+      li.classList.add('comment-item', 'mb-3');
+      li.innerHTML = `
+        <p><strong>${data.authorName}</strong> <small class="text-muted">${formatted}</small></p>
+        <p>${data.text}</p>
+        <hr/>
+      `;
+      commentsList.appendChild(li);
+    });
+  } catch (err) {
+    commentsList.innerHTML = `<p class="text-danger">Error loading comments: ${err.message}</p>`;
+  }
+}
+
+// Post a new comment
+function setupCommentSubmission(articleId) {
+  const commentForm = document.getElementById('commentForm');
+  commentForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    const name = document.getElementById('commentName').value.trim();
+    const text = document.getElementById('commentText').value.trim();
+    if (!name || !text) return;
+
+    try {
+      await db.collection('comments').add({
+        articleId,
+        authorName: name,
+        text,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      commentForm.reset();
+      loadComments(articleId);
+    } catch (err) {
+      alert(`Failed to post comment: ${err.message}`);
+    }
+  });
+}
+
     async function showFullNews(docId) {
       const newsContainer = document.getElementById('newsContainer');
       newsContainer.dataset.articleId = docId;
@@ -156,6 +261,18 @@
           <p class="news-meta"><strong>Category:</strong> ${article.category}</p>
           <p class="news-meta"><strong>Date:</strong> ${formattedDate} | <strong>Time:</strong> ${formattedTime}</p>
           <p class="full-content">${article.content}</p>
+
+${article.videoUrl ? `
+  <div class="mt-4">
+    <h5>Watch Video</h5>
+    ${
+      article.videoUrl.includes('youtube')
+        ? `<iframe width="100%" height="315" src="${article.videoUrl.replace("watch?v=", "embed/")}" frameborder="0" allowfullscreen></iframe>`
+        : `<video width="100%" height="auto" controls><source src="${article.videoUrl}" type="video/mp4">Your browser does not support the video tag.</video>`
+    }
+  </div>
+` : ''}
+
           <div class="social-share">
             <a href="https://www.facebook.com/sharer/sharer.php?u=${shareUrl}" target="_blank" class="share-btn"><i class="fab fa-facebook-f"></i></a>
             <a href="https://twitter.com/intent/tweet?url=${shareUrl}&text=${encodeURIComponent(article.title)}" target="_blank" class="share-btn"><i class="fab fa-twitter"></i></a>
@@ -164,9 +281,29 @@
           </div>
           <a href="index.html" class="read-more">Back to Home</a>
         </div>
+
+        <div class="comments-section">
+  <h3>Comments</h3>
+  <div id="commentsList"></div>
+  <!-- Simple anonymous comment form -->
+  <form id="commentForm">
+    <div class="mb-3">
+      <label for="commentName" class="form-label">Name</label>
+      <input type="text" id="commentName" class="form-control" required/>
+    </div>
+    <div class="mb-3">
+      <label for="commentText" class="form-label">Comment</label>
+      <textarea id="commentText" class="form-control" rows="3" required></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">Post Comment</button>
+  </form>
+</div>
+
       `;
       debounceIncrementViews(docId);
       fetchRelatedArticles(article.category, docId);
+      loadComments(docId);
+  setupCommentSubmission(docId);
     }
 
     function renderPagination(totalPages, currentPage, fetchFunction, category = null) {
@@ -367,8 +504,14 @@
       }
     }
 
-    setInterval(fetchBreakingNews, 5000);
+
+
+
+
+
+    loadTopStories();
     fetchBreakingNews();
+    setInterval(fetchBreakingNews, 10000);
     fetchNews();
     fetchCategories();
   </script>
